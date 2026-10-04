@@ -1,0 +1,1169 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#10261d">
+  <title>蹴球技术指导板</title>
+  <style>
+    :root {
+      --ink: #17221c;
+      --muted: #66746a;
+      --line: #dbe4db;
+      --paper: #f3f6f1;
+      --surface: #ffffff;
+      --deep: #10261d;
+      --green: #226246;
+      --green-2: #36825e;
+      --field: #d9e8d8;
+      --field-line: rgba(255, 255, 255, 0.76);
+      --red: #d23d52;
+      --red-deep: #941f35;
+      --red-soft: #ffe8eb;
+      --blue: #2a70ca;
+      --blue-deep: #174b97;
+      --blue-soft: #e5efff;
+      --gold: #e4aa36;
+      --shadow: 0 12px 34px rgba(28, 57, 39, 0.13);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { background: var(--paper); }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(34, 98, 70, 0.07), transparent 34%),
+        linear-gradient(315deg, rgba(42, 112, 202, 0.06), transparent 38%),
+        var(--paper);
+      font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button, input, textarea { font: inherit; }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, opacity 120ms ease;
+    }
+
+    button:hover { box-shadow: 0 7px 17px rgba(28, 57, 39, 0.16); }
+    button:active { transform: scale(0.98); }
+    button:disabled { cursor: not-allowed; opacity: 0.4; box-shadow: none; transform: none; }
+
+    .app {
+      width: min(100% - 24px, 1240px);
+      margin: 0 auto;
+      padding: 18px 0 calc(28px + env(safe-area-inset-bottom));
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 14px;
+    }
+
+    .eyebrow {
+      margin: 0 0 5px;
+      color: var(--green);
+      font-size: 0.82rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--deep);
+      font-size: clamp(1.6rem, 3vw, 2.5rem);
+      line-height: 1.08;
+      font-weight: 900;
+    }
+
+    .subtitle {
+      max-width: 680px;
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+      line-height: 1.45;
+    }
+
+    .live-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      flex: 0 0 auto;
+      padding: 9px 12px;
+      border: 1px solid #cfe2d4;
+      border-radius: 999px;
+      color: var(--green);
+      background: #eaf5ec;
+      font-size: 0.82rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .live-chip::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #2aa362;
+      box-shadow: 0 0 0 4px rgba(42, 163, 98, 0.15);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .board-card,
+    .panel {
+      border: 1px solid rgba(214, 227, 216, 0.88);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: var(--shadow);
+    }
+
+    .board-card { overflow: hidden; }
+
+    .board-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 13px 15px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .board-title { min-width: 0; }
+
+    .board-title h2 {
+      margin: 0;
+      font-size: 1.03rem;
+      font-weight: 900;
+    }
+
+    .board-title p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .orientation {
+      flex: 0 0 auto;
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      color: var(--muted);
+      background: #f7faf6;
+      font-size: 0.73rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .board-wrap {
+      position: relative;
+      padding: 12px;
+      background: #f4f8f2;
+    }
+
+    #board {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      border-radius: 9px;
+      background: var(--field);
+      box-shadow: inset 0 0 0 1px rgba(16, 38, 29, 0.14), 0 6px 18px rgba(28, 57, 39, 0.1);
+      touch-action: none;
+      user-select: none;
+    }
+
+    #board.is-arrow-mode,
+    #board.is-route-mode { cursor: crosshair; }
+
+    #board.is-select-mode { cursor: grab; }
+
+    .field-line {
+      fill: none;
+      stroke: var(--field-line);
+      stroke-width: 4;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .field-line.soft { stroke-width: 2; opacity: 0.75; }
+
+    .zone-label {
+      fill: rgba(25, 69, 45, 0.6);
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+
+    .service-zone {
+      fill: none;
+      stroke: rgba(25, 69, 45, 0.5);
+      stroke-width: 3;
+      stroke-dasharray: 10 8;
+    }
+
+    .service-label {
+      fill: #245b3d;
+      font-size: 22px;
+      font-weight: 900;
+      text-anchor: middle;
+    }
+
+    .service-detail {
+      fill: rgba(25, 69, 45, 0.64);
+      font-size: 14px;
+      font-weight: 800;
+      text-anchor: middle;
+    }
+
+    .dimension-line {
+      fill: none;
+      stroke: rgba(25, 69, 45, 0.66);
+      stroke-width: 2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .dimension-label {
+      fill: #245b3d;
+      font-size: 18px;
+      font-weight: 900;
+      text-anchor: middle;
+    }
+
+    .court-spec {
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    .hint-label {
+      fill: rgba(255, 255, 255, 0.85);
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .drawn-arrow,
+    .drawn-route {
+      fill: none;
+      stroke: #173d2a;
+      stroke-width: 6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      vector-effect: non-scaling-stroke;
+      pointer-events: none;
+    }
+
+    .drawn-route {
+      stroke: #9c7417;
+      stroke-width: 5;
+      stroke-dasharray: 13 10;
+    }
+
+    .marker { cursor: grab; }
+    .marker:active { cursor: grabbing; }
+
+    .marker circle {
+      stroke: #fff;
+      stroke-width: 5;
+      vector-effect: non-scaling-stroke;
+      filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.2));
+    }
+
+    .marker.red circle { fill: var(--red); }
+    .marker.blue circle { fill: var(--blue); }
+    .marker.ball circle { fill: #f3c34e; stroke: #7d5e16; }
+
+    .marker text {
+      fill: #fff;
+      font-size: 22px;
+      font-weight: 900;
+      text-anchor: middle;
+      dominant-baseline: central;
+      pointer-events: none;
+    }
+
+    .marker.ball text { fill: #5c4310; font-size: 19px; }
+
+    .board-hint {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 20px;
+      display: none;
+      padding: 9px 11px;
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      border-radius: 8px;
+      color: #fff;
+      background: rgba(16, 38, 29, 0.78);
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .board-hint.show { display: block; }
+
+    .board-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 13px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.76rem;
+    }
+
+    .tool-name { color: var(--green); font-weight: 900; }
+
+    .side-stack { display: grid; gap: 12px; }
+
+    .panel { padding: 14px; }
+
+    .panel h2 {
+      margin: 0 0 10px;
+      color: var(--deep);
+      font-size: 1rem;
+      font-weight: 900;
+    }
+
+    .team-inputs { display: grid; gap: 8px; }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .score-team {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #fbfdfb;
+    }
+
+    .score-team.red { border-color: #f0c8ce; background: var(--red-soft); }
+    .score-team.blue { border-color: #c8d9f4; background: var(--blue-soft); }
+
+    .score-team-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 900;
+    }
+
+    .score-value {
+      margin: 5px 0 8px;
+      font-size: 2.25rem;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .score-input {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      padding: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      font: inherit;
+      color: inherit;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .score-input:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+    .score-team.red .score-value { color: var(--red-deep); }
+    .score-team.blue .score-value { color: var(--blue-deep); }
+
+    .score-adds {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 5px;
+    }
+
+    .score-add {
+      min-height: 39px;
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      border-radius: 7px;
+      color: var(--ink);
+      background: #fff;
+      font-size: 0.9rem;
+      font-weight: 900;
+    }
+
+    .score-team.red .score-add { color: var(--red-deep); }
+    .score-team.blue .score-add { color: var(--blue-deep); }
+
+    .score-reset {
+      width: 100%;
+      min-height: 38px;
+      margin-top: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+      background: #f8faf7;
+      font-size: 0.82rem;
+      font-weight: 900;
+    }
+
+    .team-input {
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+    }
+
+    .team-tag {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 34px;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 900;
+    }
+
+    .team-tag.red { background: var(--red); }
+    .team-tag.blue { background: var(--blue); }
+
+    .text-input,
+    .note-input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      outline: 0;
+      color: var(--ink);
+      background: #fbfdfb;
+    }
+
+    .text-input {
+      height: 34px;
+      padding: 0 10px;
+      font-size: 0.88rem;
+      font-weight: 800;
+    }
+
+    .note-input {
+      min-height: 94px;
+      padding: 9px 10px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .text-input:focus,
+    .note-input:focus { border-color: var(--green-2); box-shadow: 0 0 0 3px rgba(54, 130, 94, 0.13); }
+
+    .tool-grid,
+    .marker-grid,
+    .template-grid,
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .tool-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .tool-button,
+    .marker-button,
+    .template-button,
+    .action-button {
+      min-height: 42px;
+      padding: 0 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      background: #f8faf7;
+      font-size: 0.82rem;
+      font-weight: 900;
+      line-height: 1.18;
+    }
+
+    .tool-button.active { color: #fff; background: var(--green); border-color: var(--green); }
+    .marker-button.red { color: var(--red-deep); background: var(--red-soft); border-color: #f4c4cb; }
+    .marker-button.blue { color: var(--blue-deep); background: var(--blue-soft); border-color: #bfd5f7; }
+    .marker-button.ball { color: #694d0e; background: #fff4ca; border-color: #efd77c; }
+    .template-button { background: #eef5ed; }
+    .action-button.primary { color: #fff; background: var(--green); border-color: var(--green); }
+    .action-button.danger { color: #fff; background: #a44242; border-color: #a44242; }
+
+    .panel-label {
+      margin: 14px 0 8px;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 900;
+    }
+
+    .tip {
+      margin: 9px 0 0;
+      padding: 9px 10px;
+      border-left: 3px solid var(--gold);
+      color: #685218;
+      background: #fff9dd;
+      font-size: 0.77rem;
+      line-height: 1.45;
+    }
+
+    .footer-note {
+      margin: 13px 2px 0;
+      color: var(--muted);
+      font-size: 0.74rem;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 860px) {
+      .workspace { grid-template-columns: 1fr; }
+      .side-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+      .side-stack .panel:last-child { grid-column: span 2; }
+    }
+
+    @media (max-width: 560px) {
+      .app { width: min(100% - 14px, 680px); padding-top: 12px; }
+      .topbar { margin-bottom: 10px; }
+      .subtitle { font-size: 0.82rem; }
+      .live-chip { padding: 8px 9px; font-size: 0.72rem; }
+      .board-top { padding: 11px 12px; }
+      .board-wrap { padding: 8px; }
+      .board-footer { padding: 9px 10px; }
+      .side-stack { display: grid; grid-template-columns: 1fr; gap: 10px; }
+      .side-stack .panel:last-child { grid-column: auto; }
+      .panel { padding: 12px; border-radius: 12px; }
+      .tool-button, .marker-button, .template-button, .action-button { min-height: 46px; }
+      .board-hint { left: 15px; right: 15px; bottom: 15px; }
+      .zone-label { font-size: 19px; }
+      .hint-label { font-size: 12px; }
+    }
+
+    @media (max-width: 365px) {
+      h1 { font-size: 1.42rem; }
+      .live-chip { display: none; }
+      .tool-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">MATCH COACH BOARD</p>
+        <h1>蹴球技术指导板</h1>
+        <p class="subtitle">拖动队员调整站位，画出进攻路线和防守移动，现场直接给队员看。</p>
+      </div>
+      <div class="live-chip">现场指导</div>
+    </header>
+
+    <section class="workspace" aria-label="蹴球比赛技术板">
+      <section class="board-card">
+        <div class="board-top">
+          <div class="board-title">
+            <h2>示意场地</h2>
+            <p>按实际场地站位理解，1m = 100 个示意单位</p>
+          </div>
+          <div class="orientation">10m × 10m</div>
+        </div>
+        <div class="board-wrap">
+          <svg id="board" viewBox="0 0 1000 1000" role="img" aria-label="10米乘10米蹴球比赛战术示意场地">
+            <defs>
+              <marker id="arrowHead" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="strokeWidth">
+                <path d="M 0 0 L 12 6 L 0 12 z" fill="#173d2a"></path>
+              </marker>
+              <marker id="routeHead" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="strokeWidth">
+                <path d="M 0 0 L 12 6 L 0 12 z" fill="#9c7417"></path>
+              </marker>
+              <marker id="dimensionHead" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto-start-reverse" markerUnits="strokeWidth">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(25, 69, 45, 0.66)"></path>
+              </marker>
+            </defs>
+            <rect x="0" y="0" width="1000" height="1000" rx="12" fill="#d9e8d8"></rect>
+            <rect x="20" y="20" width="960" height="960" rx="8" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.86)" stroke-width="4"></rect>
+            <path class="field-line soft" d="M500 20 V980 M20 500 H980"></path>
+            <circle cx="500" cy="500" r="240" class="field-line"></circle>
+            <circle cx="500" cy="500" r="20" fill="rgba(255, 246, 173, 0.7)" stroke="#9c7417" stroke-width="3" stroke-dasharray="7 5"></circle>
+            <path d="M20 70 A50 50 0 0 0 70 20" class="service-zone"></path>
+            <path d="M930 20 A50 50 0 0 0 980 70" class="service-zone"></path>
+            <path d="M980 930 A50 50 0 0 0 930 980" class="service-zone"></path>
+            <path d="M70 980 A50 50 0 0 0 20 930" class="service-zone"></path>
+            <text x="48" y="48" class="service-label">1</text>
+            <text x="952" y="48" class="service-label">2</text>
+            <text x="952" y="958" class="service-label">3</text>
+            <text x="48" y="958" class="service-label">4</text>
+            <path class="dimension-line" d="M80 32 H920" marker-start="url(#dimensionHead)" marker-end="url(#dimensionHead)"></path>
+            <path class="dimension-line" d="M32 80 V920" marker-start="url(#dimensionHead)" marker-end="url(#dimensionHead)"></path>
+            <g id="drawingLayer"></g>
+            <g id="markerLayer"></g>
+          </svg>
+          <div class="board-hint" id="boardHint"></div>
+        </div>
+        <div class="board-footer">
+          <span>当前工具：<span class="tool-name" id="toolName">移动队员</span></span>
+          <span id="objectCount">4 个标记 · 0 条路线</span>
+        </div>
+      </section>
+
+      <aside class="side-stack">
+        <section class="panel">
+          <h2>比赛比分 <span style="color:var(--muted);font-size:.78rem;font-weight:700">最高 100 分</span></h2>
+          <div class="score-grid">
+            <div class="score-team red">
+              <div class="score-team-head"><span>红方</span><span>分</span></div>
+              <label class="score-value"><input class="score-input" id="redScore" type="number" min="0" max="100" step="1" value="0" aria-label="红方比分"></label>
+              <div class="score-adds">
+                <button class="score-add" data-score-team="red" data-points="1">+1</button>
+                <button class="score-add" data-score-team="red" data-points="2">+2</button>
+                <button class="score-add" data-score-team="red" data-points="4">+4</button>
+              </div>
+            </div>
+            <div class="score-team blue">
+              <div class="score-team-head"><span>蓝方</span><span>分</span></div>
+              <label class="score-value"><input class="score-input" id="blueScore" type="number" min="0" max="100" step="1" value="0" aria-label="蓝方比分"></label>
+              <div class="score-adds">
+                <button class="score-add" data-score-team="blue" data-points="1">+1</button>
+                <button class="score-add" data-score-team="blue" data-points="2">+2</button>
+                <button class="score-add" data-score-team="blue" data-points="4">+4</button>
+              </div>
+            </div>
+          </div>
+          <button class="score-reset" id="resetScores">比分归零</button>
+        </section>
+
+        <section class="panel">
+          <h2>队伍设置</h2>
+          <div class="team-inputs">
+            <label class="team-input">
+              <span class="team-tag red">红</span>
+              <input class="text-input" id="redName" maxlength="14" placeholder="红方队名" aria-label="红方队名">
+            </label>
+            <label class="team-input">
+              <span class="team-tag blue">蓝</span>
+              <input class="text-input" id="blueName" maxlength="14" placeholder="蓝方队名" aria-label="蓝方队名">
+            </label>
+          </div>
+
+          <div class="panel-label">画法</div>
+          <div class="tool-grid">
+            <button class="tool-button active" data-tool="select">移动队员</button>
+            <button class="tool-button" data-tool="arrow">画箭头</button>
+            <button class="tool-button" data-tool="route">画路线</button>
+          </div>
+
+          <div class="panel-label">添加标记</div>
+          <div class="marker-grid">
+            <button class="marker-button red" id="addRed">＋红方队员</button>
+            <button class="marker-button blue" id="addBlue">＋蓝方队员</button>
+            <button class="marker-button" id="removeSelected">删除选中</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>快速战术</h2>
+          <div class="template-grid">
+            <button class="template-button" data-template="attack">进攻拉开</button>
+            <button class="template-button" data-template="defend">防守收紧</button>
+            <button class="template-button" data-template="return">快速回防</button>
+            <button class="template-button" data-template="empty">清空重画</button>
+          </div>
+          <p class="tip">模板只用于快速讲解，使用前可以继续拖动队员标记调整。</p>
+        </section>
+
+        <section class="panel">
+          <h2>本回合提示</h2>
+          <textarea class="note-input" id="coachNote" maxlength="240" placeholder="例如：先把对方带到右侧，再由 2 号补位……" aria-label="本回合提示"></textarea>
+          <div class="action-grid" style="margin-top: 9px;">
+            <button class="action-button primary" id="saveBoard">保存当前战术</button>
+            <button class="action-button" id="undo">撤销上一步</button>
+            <button class="action-button danger" id="clearBoard">清空画面</button>
+            <button class="action-button" id="resetBoard">恢复初始</button>
+          </div>
+          <p class="footer-note">战术图和提示会保存在当前设备，刷新页面后仍可继续修改。</p>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "cuqiu-technical-board-v4";
+    const LEGACY_STORAGE_KEYS = ["cuqiu-technical-board-v3", "cuqiu-technical-board-v2"];
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    const INITIAL_MARKERS = [
+      { id: "red-1", type: "red", label: "1", x: 105, y: 105 },
+      { id: "blue-2", type: "blue", label: "2", x: 895, y: 105 },
+      { id: "red-3", type: "red", label: "3", x: 895, y: 895 },
+      { id: "blue-4", type: "blue", label: "4", x: 105, y: 895 }
+    ];
+
+    function cloneInitialMarkers() {
+      return INITIAL_MARKERS.map((marker) => ({ ...marker }));
+    }
+
+    function freshState() {
+      return {
+        redName: "",
+        blueName: "",
+        redScore: 0,
+        blueScore: 0,
+        note: "",
+        markers: cloneInitialMarkers(),
+        drawings: [],
+        history: []
+      };
+    }
+
+    function loadState() {
+      try {
+        const saved = [STORAGE_KEY, ...LEGACY_STORAGE_KEYS].map((key) => localStorage.getItem(key)).find(Boolean);
+        if (!saved) return freshState();
+        const parsed = JSON.parse(saved);
+        let markers = Array.isArray(parsed.markers) ? parsed.markers : cloneInitialMarkers();
+        const legacyRoster = markers.length === 3
+          && markers.some((marker) => marker.type === "red")
+          && markers.some((marker) => marker.type === "blue")
+          && markers.some((marker) => marker.type === "ball");
+        if (legacyRoster) {
+          const red = markers.find((marker) => marker.type === "red");
+          const blue = markers.find((marker) => marker.type === "blue");
+          red.label = "1";
+          blue.label = "2";
+          markers = [
+            ...markers,
+            { id: "red-3", type: "red", label: "3", x: 895, y: 895 },
+            { id: "blue-4", type: "blue", label: "4", x: 105, y: 895 }
+          ];
+        }
+        markers = markers.filter((marker) => marker.type !== "ball");
+        if (markers.length === 0 && parsed.markers?.some((marker) => marker.type === "ball")) markers = cloneInitialMarkers();
+        return {
+          ...freshState(),
+          ...parsed,
+          markers,
+          drawings: Array.isArray(parsed.drawings) ? parsed.drawings : [],
+          history: Array.isArray(parsed.history) ? parsed.history : []
+        };
+      } catch (error) {
+        return freshState();
+      }
+    }
+
+    let state = loadState();
+    let activeTool = "select";
+    let selectedId = "";
+    let pointerAction = null;
+
+    const el = {
+      board: document.getElementById("board"),
+      drawingLayer: document.getElementById("drawingLayer"),
+      markerLayer: document.getElementById("markerLayer"),
+      boardHint: document.getElementById("boardHint"),
+      toolName: document.getElementById("toolName"),
+      objectCount: document.getElementById("objectCount"),
+      redScore: document.getElementById("redScore"),
+      blueScore: document.getElementById("blueScore"),
+      redName: document.getElementById("redName"),
+      blueName: document.getElementById("blueName"),
+      coachNote: document.getElementById("coachNote"),
+      saveBoard: document.getElementById("saveBoard"),
+      undo: document.getElementById("undo"),
+      clearBoard: document.getElementById("clearBoard"),
+      resetBoard: document.getElementById("resetBoard")
+    };
+
+    const toolLabels = {
+      select: "移动队员",
+      arrow: "画进攻箭头",
+      route: "画移动路线"
+    };
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          redName: state.redName,
+          blueName: state.blueName,
+          redScore: state.redScore,
+          blueScore: state.blueScore,
+          note: state.note,
+          markers: state.markers,
+          drawings: state.drawings,
+          history: state.history
+        }));
+      } catch (error) {
+        // Keep board controls usable when a browser blocks local-file storage.
+      }
+    }
+
+    function snapshot() {
+      return {
+        markers: state.markers.map((marker) => ({ ...marker })),
+        drawings: state.drawings.map((drawing) => ({ ...drawing })),
+        redScore: state.redScore,
+        blueScore: state.blueScore
+      };
+    }
+
+    function pushHistory() {
+      state.history.push(snapshot());
+      if (state.history.length > 30) state.history.shift();
+    }
+
+    function restoreSnapshot(previous) {
+      state.markers = previous.markers.filter((marker) => marker.type !== "ball").map((marker) => ({ ...marker }));
+      state.drawings = previous.drawings.map((drawing) => ({ ...drawing }));
+      state.redScore = Number.isInteger(previous.redScore) ? previous.redScore : state.redScore;
+      state.blueScore = Number.isInteger(previous.blueScore) ? previous.blueScore : state.blueScore;
+      selectedId = "";
+    }
+
+    function svgPoint(event) {
+      const rect = el.board.getBoundingClientRect();
+      return {
+        x: Math.max(20, Math.min(980, ((event.clientX - rect.left) / rect.width) * 1000)),
+        y: Math.max(20, Math.min(980, ((event.clientY - rect.top) / rect.height) * 1000))
+      };
+    }
+
+    function createSvg(tag, attrs = {}) {
+      const node = document.createElementNS(SVG_NS, tag);
+      Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+      return node;
+    }
+
+    function renderDrawings() {
+      el.drawingLayer.innerHTML = "";
+      state.drawings.forEach((drawing) => {
+        const line = createSvg("line", {
+          x1: drawing.x1,
+          y1: drawing.y1,
+          x2: drawing.x2,
+          y2: drawing.y2,
+          class: drawing.type === "route" ? "drawn-route" : "drawn-arrow",
+          "marker-end": drawing.type === "route" ? "url(#routeHead)" : "url(#arrowHead)"
+        });
+        el.drawingLayer.appendChild(line);
+      });
+    }
+
+    function renderMarkers() {
+      el.markerLayer.innerHTML = "";
+      state.markers.forEach((marker) => {
+        const group = createSvg("g", {
+          class: `marker ${marker.type}`,
+          transform: `translate(${marker.x} ${marker.y})`,
+          "data-id": marker.id,
+          "aria-label": `${marker.type === "red" ? "红方" : "蓝方"}${marker.label}`
+        });
+        const circle = createSvg("circle", { r: 30 });
+        const text = createSvg("text", { x: 0, y: 1 });
+        text.textContent = marker.label;
+        group.appendChild(circle);
+        group.appendChild(text);
+        group.addEventListener("pointerdown", (event) => beginMarkerDrag(event, marker.id));
+        group.addEventListener("click", (event) => {
+          event.stopPropagation();
+          selectedId = marker.id;
+          renderMarkers();
+        });
+        if (selectedId === marker.id) {
+          circle.setAttribute("stroke", "#fff9b2");
+          circle.setAttribute("stroke-width", "8");
+        }
+        el.markerLayer.appendChild(group);
+      });
+    }
+
+    function render() {
+      el.redName.value = state.redName;
+      el.blueName.value = state.blueName;
+      el.coachNote.value = state.note;
+      el.redScore.value = state.redScore;
+      el.blueScore.value = state.blueScore;
+      document.querySelectorAll("[data-score-team]").forEach((button) => {
+        const score = button.dataset.scoreTeam === "red" ? state.redScore : state.blueScore;
+        button.disabled = score + Number(button.dataset.points) > 100;
+      });
+      el.toolName.textContent = toolLabels[activeTool];
+      el.objectCount.textContent = `${state.markers.length} 个标记 · ${state.drawings.length} 条路线`;
+      el.undo.disabled = state.history.length === 0;
+      el.board.classList.toggle("is-select-mode", activeTool === "select");
+      el.board.classList.toggle("is-arrow-mode", activeTool === "arrow");
+      el.board.classList.toggle("is-route-mode", activeTool === "route");
+      document.querySelectorAll("[data-tool]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.tool === activeTool);
+      });
+      renderDrawings();
+      renderMarkers();
+    }
+
+    function showHint(message) {
+      el.boardHint.textContent = message;
+      el.boardHint.classList.add("show");
+      clearTimeout(showHint.timer);
+      showHint.timer = setTimeout(() => el.boardHint.classList.remove("show"), 1800);
+    }
+
+    function setTool(tool) {
+      activeTool = tool;
+      selectedId = "";
+      const message = tool === "select" ? "拖动红蓝队员调整站位" : tool === "arrow" ? "在场地上拖动，画出进攻方向" : "在场地上拖动，画出队员移动路线";
+      showHint(message);
+      render();
+    }
+
+    function nextLabel(type) {
+      const numbers = state.markers.filter((marker) => marker.type === type).map((marker) => Number(marker.label)).filter(Number.isFinite);
+      return String(numbers.length ? Math.max(...numbers) + 2 : type === "red" ? 1 : 2);
+    }
+
+    function addMarker(type) {
+      pushHistory();
+      const position = type === "red" ? { x: 170, y: 280 + state.markers.filter((marker) => marker.type === "red").length * 120 } : { x: 830, y: 280 + state.markers.filter((marker) => marker.type === "blue").length * 120 };
+      const marker = {
+        id: `${type}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        type,
+        label: nextLabel(type),
+        x: Math.min(940, position.x),
+        y: Math.min(940, position.y)
+      };
+      state.markers.push(marker);
+      selectedId = marker.id;
+      saveState();
+      render();
+      showHint(`已添加${type === "red" ? "红方" : "蓝方"}队员标记`);
+    }
+
+    function beginMarkerDrag(event, id) {
+      if (activeTool !== "select") return;
+      event.stopPropagation();
+      event.preventDefault();
+      const marker = state.markers.find((item) => item.id === id);
+      if (!marker) return;
+      selectedId = id;
+      pushHistory();
+      pointerAction = { kind: "marker", id };
+      el.board.setPointerCapture?.(event.pointerId);
+      renderMarkers();
+    }
+
+    function beginDrawing(event) {
+      if (activeTool === "select") {
+        if (event.target === el.board) selectedId = "";
+        renderMarkers();
+        return;
+      }
+      event.preventDefault();
+      const point = svgPoint(event);
+      pointerAction = { kind: "drawing", type: activeTool, ...point };
+      el.board.setPointerCapture?.(event.pointerId);
+    }
+
+    function updatePointer(event) {
+      if (!pointerAction) return;
+      const point = svgPoint(event);
+      if (pointerAction.kind === "marker") {
+        const marker = state.markers.find((item) => item.id === pointerAction.id);
+        if (marker) {
+          marker.x = point.x;
+          marker.y = point.y;
+          renderMarkers();
+        }
+      }
+    }
+
+    function finishPointer(event) {
+      if (!pointerAction) return;
+      const action = pointerAction;
+      pointerAction = null;
+      if (action.kind !== "drawing") {
+        saveState();
+        return;
+      }
+      const point = svgPoint(event);
+      const distance = Math.hypot(point.x - action.x, point.y - action.y);
+      if (distance > 25) {
+        state.drawings.push({
+          id: `drawing-${Date.now()}`,
+          type: action.type,
+          x1: action.x,
+          y1: action.y,
+          x2: point.x,
+          y2: point.y
+        });
+        saveState();
+        render();
+      }
+    }
+
+    function removeSelected() {
+      if (!selectedId) {
+        showHint("请先点击一个队员标记");
+        return;
+      }
+      pushHistory();
+      state.markers = state.markers.filter((marker) => marker.id !== selectedId);
+      selectedId = "";
+      saveState();
+      render();
+    }
+
+    function clearBoard() {
+      pushHistory();
+      state.markers = [];
+      state.drawings = [];
+      selectedId = "";
+      saveState();
+      render();
+      showHint("画面已清空，可以重新摆位");
+    }
+
+    function resetBoard() {
+      pushHistory();
+      state = freshState();
+      selectedId = "";
+      saveState();
+      render();
+      showHint("已恢复初始站位");
+    }
+
+    function undo() {
+      const previous = state.history.pop();
+      if (!previous) return;
+      restoreSnapshot(previous);
+      saveState();
+      render();
+      showHint("已撤销上一步操作");
+    }
+
+    function addScore(team, points) {
+      const key = team === "red" ? "redScore" : "blueScore";
+      if (state[key] + points > 100) return;
+      pushHistory();
+      state[key] += points;
+      saveState();
+      render();
+      showHint(`${team === "red" ? "红方" : "蓝方"} +${points} 分`);
+    }
+
+    function resetScores() {
+      if (state.redScore === 0 && state.blueScore === 0) return;
+      pushHistory();
+      state.redScore = 0;
+      state.blueScore = 0;
+      saveState();
+      render();
+      showHint("双方比分已归零");
+    }
+
+    function setScore(team, rawValue) {
+      const value = Number(rawValue);
+      if (!Number.isFinite(value)) { render(); return; }
+      const key = team === "red" ? "redScore" : "blueScore";
+      const boundedValue = Math.max(0, Math.min(100, Math.trunc(value)));
+      if (state[key] === boundedValue) { render(); return; }
+      pushHistory();
+      state[key] = boundedValue;
+      saveState();
+      render();
+    }
+
+    function applyTemplate(name) {
+      if (name === "empty") {
+        clearBoard();
+        return;
+      }
+      pushHistory();
+      state.drawings = [];
+      if (name === "attack") {
+        state.markers = [
+          { id: "red-1", type: "red", label: "1", x: 165, y: 300 },
+          { id: "red-2", type: "red", label: "2", x: 175, y: 700 },
+          { id: "blue-1", type: "blue", label: "1", x: 810, y: 300 },
+          { id: "blue-2", type: "blue", label: "2", x: 825, y: 700 }
+        ];
+        state.drawings = [
+          { id: "attack-1", type: "arrow", x1: 190, y1: 300, x2: 430, y2: 440 },
+          { id: "attack-2", type: "route", x1: 190, y1: 700, x2: 420, y2: 560 }
+        ];
+        state.note = "先把两侧拉开，1 号带球向中路推进，2 号从下方补位。";
+      } else if (name === "defend") {
+        state.markers = [
+          { id: "red-1", type: "red", label: "1", x: 330, y: 320 },
+          { id: "red-2", type: "red", label: "2", x: 330, y: 500 },
+          { id: "red-3", type: "red", label: "3", x: 330, y: 680 },
+          { id: "blue-1", type: "blue", label: "1", x: 760, y: 340 },
+          { id: "blue-2", type: "blue", label: "2", x: 815, y: 660 }
+        ];
+        state.drawings = [
+          { id: "defend-1", type: "route", x1: 355, y1: 320, x2: 550, y2: 390 },
+          { id: "defend-2", type: "route", x1: 355, y1: 500, x2: 585, y2: 500 },
+          { id: "defend-3", type: "route", x1: 355, y1: 680, x2: 550, y2: 610 }
+        ];
+        state.note = "三人保持纵向距离，先守住中路，再根据蹴球位置协同移动。";
+      } else {
+        state.markers = [
+          { id: "red-1", type: "red", label: "1", x: 280, y: 260 },
+          { id: "red-2", type: "red", label: "2", x: 250, y: 740 },
+          { id: "blue-1", type: "blue", label: "1", x: 760, y: 340 },
+          { id: "blue-2", type: "blue", label: "2", x: 820, y: 660 }
+        ];
+        state.drawings = [
+          { id: "return-1", type: "arrow", x1: 280, y1: 260, x2: 180, y2: 380 },
+          { id: "return-2", type: "arrow", x1: 250, y1: 740, x2: 180, y2: 620 }
+        ];
+        state.note = "看到对方推进时先回到保护位置，保持一前一后，不要同时压上。";
+      }
+      selectedId = "";
+      saveState();
+      render();
+      showHint("已载入战术模板，可继续拖动调整");
+    }
+
+    document.querySelectorAll("[data-tool]").forEach((button) => button.addEventListener("click", () => setTool(button.dataset.tool)));
+    document.querySelectorAll("[data-template]").forEach((button) => button.addEventListener("click", () => applyTemplate(button.dataset.template)));
+    document.querySelectorAll("[data-score-team]").forEach((button) => {
+      button.addEventListener("click", () => addScore(button.dataset.scoreTeam, Number(button.dataset.points)));
+    });
+    document.getElementById("resetScores").addEventListener("click", resetScores);
+    el.board.addEventListener("pointerdown", beginDrawing);
+    el.board.addEventListener("pointermove", updatePointer);
+    el.board.addEventListener("pointerup", finishPointer);
+    el.board.addEventListener("pointercancel", finishPointer);
+    document.getElementById("addRed").addEventListener("click", () => addMarker("red"));
+    document.getElementById("addBlue").addEventListener("click", () => addMarker("blue"));
+    el.redScore.addEventListener("change", (event) => setScore("red", event.target.value));
+    el.blueScore.addEventListener("change", (event) => setScore("blue", event.target.value));
+    document.getElementById("removeSelected").addEventListener("click", removeSelected);
+    el.undo.addEventListener("click", undo);
+    el.clearBoard.addEventListener("click", clearBoard);
+    el.resetBoard.addEventListener("click", resetBoard);
+    el.saveBoard.addEventListener("click", () => { saveState(); showHint("当前战术已保存到本设备"); });
+    el.redName.addEventListener("input", (event) => { state.redName = event.target.value; saveState(); });
+    el.blueName.addEventListener("input", (event) => { state.blueName = event.target.value; saveState(); });
+    el.coachNote.addEventListener("input", (event) => { state.note = event.target.value; saveState(); });
+    window.addEventListener("beforeunload", saveState);
+
+    render();
+  </script>
+</body>
+</html>
+
