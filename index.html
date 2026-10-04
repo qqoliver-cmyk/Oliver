@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#10261d">
+  <meta name="description" content="蹴球比赛技术指导板，支持红蓝双方计分、站位调整和战术路线。">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <title>蹴球技术指导板</title>
   <style>
     :root {
@@ -600,19 +602,16 @@
             </defs>
             <rect x="0" y="0" width="1000" height="1000" rx="12" fill="#d9e8d8"></rect>
             <rect x="20" y="20" width="960" height="960" rx="8" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.86)" stroke-width="4"></rect>
-            <path class="field-line soft" d="M500 20 V980 M20 500 H980"></path>
-            <circle cx="500" cy="500" r="240" class="field-line"></circle>
-            <circle cx="500" cy="500" r="20" fill="rgba(255, 246, 173, 0.7)" stroke="#9c7417" stroke-width="3" stroke-dasharray="7 5"></circle>
-            <path d="M20 70 A50 50 0 0 0 70 20" class="service-zone"></path>
-            <path d="M930 20 A50 50 0 0 0 980 70" class="service-zone"></path>
-            <path d="M980 930 A50 50 0 0 0 930 980" class="service-zone"></path>
-            <path d="M70 980 A50 50 0 0 0 20 930" class="service-zone"></path>
+            <circle cx="500" cy="500" r="230.4" class="field-line"></circle>
+            <circle cx="500" cy="500" r="19.2" fill="none" stroke="#9c7417" stroke-width="3"></circle>
+            <path d="M20 68 A48 48 0 0 0 68 20" class="service-zone"></path>
+            <path d="M932 20 A48 48 0 0 0 980 68" class="service-zone"></path>
+            <path d="M980 932 A48 48 0 0 0 932 980" class="service-zone"></path>
+            <path d="M68 980 A48 48 0 0 0 20 932" class="service-zone"></path>
             <text x="48" y="48" class="service-label">1</text>
             <text x="952" y="48" class="service-label">2</text>
             <text x="952" y="958" class="service-label">3</text>
             <text x="48" y="958" class="service-label">4</text>
-            <path class="dimension-line" d="M80 32 H920" marker-start="url(#dimensionHead)" marker-end="url(#dimensionHead)"></path>
-            <path class="dimension-line" d="M32 80 V920" marker-start="url(#dimensionHead)" marker-end="url(#dimensionHead)"></path>
             <g id="drawingLayer"></g>
             <g id="markerLayer"></g>
           </svg>
@@ -630,7 +629,7 @@
           <div class="score-grid">
             <div class="score-team red">
               <div class="score-team-head"><span>红方</span><span>分</span></div>
-              <label class="score-value"><input class="score-input" id="redScore" type="number" min="0" max="100" step="1" value="0" aria-label="红方比分"></label>
+              <label class="score-value"><input class="score-input" id="redScore" type="number" inputmode="numeric" min="0" max="100" step="1" value="0" aria-label="红方比分"></label>
               <div class="score-adds">
                 <button class="score-add" data-score-team="red" data-points="1">+1</button>
                 <button class="score-add" data-score-team="red" data-points="2">+2</button>
@@ -639,7 +638,7 @@
             </div>
             <div class="score-team blue">
               <div class="score-team-head"><span>蓝方</span><span>分</span></div>
-              <label class="score-value"><input class="score-input" id="blueScore" type="number" min="0" max="100" step="1" value="0" aria-label="蓝方比分"></label>
+              <label class="score-value"><input class="score-input" id="blueScore" type="number" inputmode="numeric" min="0" max="100" step="1" value="0" aria-label="蓝方比分"></label>
               <div class="score-adds">
                 <button class="score-add" data-score-team="blue" data-points="1">+1</button>
                 <button class="score-add" data-score-team="blue" data-points="2">+2</button>
@@ -732,6 +731,11 @@
       };
     }
 
+    function boundedScore(value) {
+      const number = Number(value);
+      return Number.isFinite(number) ? Math.max(0, Math.min(100, Math.trunc(number))) : 0;
+    }
+
     function loadState() {
       try {
         const saved = [STORAGE_KEY, ...LEGACY_STORAGE_KEYS].map((key) => localStorage.getItem(key)).find(Boolean);
@@ -758,6 +762,8 @@
         return {
           ...freshState(),
           ...parsed,
+          redScore: boundedScore(parsed.redScore),
+          blueScore: boundedScore(parsed.blueScore),
           markers,
           drawings: Array.isArray(parsed.drawings) ? parsed.drawings : [],
           history: Array.isArray(parsed.history) ? parsed.history : []
@@ -818,7 +824,8 @@
         markers: state.markers.map((marker) => ({ ...marker })),
         drawings: state.drawings.map((drawing) => ({ ...drawing })),
         redScore: state.redScore,
-        blueScore: state.blueScore
+        blueScore: state.blueScore,
+        note: state.note
       };
     }
 
@@ -830,8 +837,9 @@
     function restoreSnapshot(previous) {
       state.markers = previous.markers.filter((marker) => marker.type !== "ball").map((marker) => ({ ...marker }));
       state.drawings = previous.drawings.map((drawing) => ({ ...drawing }));
-      state.redScore = Number.isInteger(previous.redScore) ? previous.redScore : state.redScore;
-      state.blueScore = Number.isInteger(previous.blueScore) ? previous.blueScore : state.blueScore;
+      state.redScore = boundedScore(previous.redScore ?? state.redScore);
+      state.blueScore = boundedScore(previous.blueScore ?? state.blueScore);
+      state.note = previous.note ?? state.note;
       selectedId = "";
     }
 
@@ -960,7 +968,7 @@
       if (!marker) return;
       selectedId = id;
       pushHistory();
-      pointerAction = { kind: "marker", id };
+      pointerAction = { kind: "marker", id, pointerId: event.pointerId };
       el.board.setPointerCapture?.(event.pointerId);
       renderMarkers();
     }
@@ -973,12 +981,13 @@
       }
       event.preventDefault();
       const point = svgPoint(event);
-      pointerAction = { kind: "drawing", type: activeTool, ...point };
+      pointerAction = { kind: "drawing", type: activeTool, pointerId: event.pointerId, ...point };
       el.board.setPointerCapture?.(event.pointerId);
     }
 
     function updatePointer(event) {
       if (!pointerAction) return;
+      if (event.pointerId !== pointerAction.pointerId) return;
       const point = svgPoint(event);
       if (pointerAction.kind === "marker") {
         const marker = state.markers.find((item) => item.id === pointerAction.id);
@@ -992,15 +1001,18 @@
 
     function finishPointer(event) {
       if (!pointerAction) return;
+      if (event.pointerId !== pointerAction.pointerId) return;
       const action = pointerAction;
       pointerAction = null;
       if (action.kind !== "drawing") {
         saveState();
+        render();
         return;
       }
       const point = svgPoint(event);
       const distance = Math.hypot(point.x - action.x, point.y - action.y);
       if (distance > 25) {
+        pushHistory();
         state.drawings.push({
           id: `drawing-${Date.now()}`,
           type: action.type,
@@ -1038,7 +1050,8 @@
 
     function resetBoard() {
       pushHistory();
-      state = freshState();
+      state.markers = cloneInitialMarkers();
+      state.drawings = [];
       selectedId = "";
       saveState();
       render();
@@ -1096,35 +1109,33 @@
       if (name === "attack") {
         state.markers = [
           { id: "red-1", type: "red", label: "1", x: 165, y: 300 },
-          { id: "red-2", type: "red", label: "2", x: 175, y: 700 },
-          { id: "blue-1", type: "blue", label: "1", x: 810, y: 300 },
-          { id: "blue-2", type: "blue", label: "2", x: 825, y: 700 }
+          { id: "red-3", type: "red", label: "3", x: 175, y: 700 },
+          { id: "blue-2", type: "blue", label: "2", x: 810, y: 300 },
+          { id: "blue-4", type: "blue", label: "4", x: 825, y: 700 }
         ];
         state.drawings = [
           { id: "attack-1", type: "arrow", x1: 190, y1: 300, x2: 430, y2: 440 },
           { id: "attack-2", type: "route", x1: 190, y1: 700, x2: 420, y2: 560 }
         ];
-        state.note = "先把两侧拉开，1 号带球向中路推进，2 号从下方补位。";
+        state.note = "红方 1、3 号两侧拉开，按画出的方向调整进攻站位。";
       } else if (name === "defend") {
         state.markers = [
           { id: "red-1", type: "red", label: "1", x: 330, y: 320 },
-          { id: "red-2", type: "red", label: "2", x: 330, y: 500 },
           { id: "red-3", type: "red", label: "3", x: 330, y: 680 },
-          { id: "blue-1", type: "blue", label: "1", x: 760, y: 340 },
-          { id: "blue-2", type: "blue", label: "2", x: 815, y: 660 }
+          { id: "blue-2", type: "blue", label: "2", x: 760, y: 340 },
+          { id: "blue-4", type: "blue", label: "4", x: 815, y: 660 }
         ];
         state.drawings = [
           { id: "defend-1", type: "route", x1: 355, y1: 320, x2: 550, y2: 390 },
-          { id: "defend-2", type: "route", x1: 355, y1: 500, x2: 585, y2: 500 },
           { id: "defend-3", type: "route", x1: 355, y1: 680, x2: 550, y2: 610 }
         ];
-        state.note = "三人保持纵向距离，先守住中路，再根据蹴球位置协同移动。";
+        state.note = "红方 1、3 号保持间距，根据对方球的位置调整防守方向。";
       } else {
         state.markers = [
           { id: "red-1", type: "red", label: "1", x: 280, y: 260 },
-          { id: "red-2", type: "red", label: "2", x: 250, y: 740 },
-          { id: "blue-1", type: "blue", label: "1", x: 760, y: 340 },
-          { id: "blue-2", type: "blue", label: "2", x: 820, y: 660 }
+          { id: "red-3", type: "red", label: "3", x: 250, y: 740 },
+          { id: "blue-2", type: "blue", label: "2", x: 760, y: 340 },
+          { id: "blue-4", type: "blue", label: "4", x: 820, y: 660 }
         ];
         state.drawings = [
           { id: "return-1", type: "arrow", x1: 280, y1: 260, x2: 180, y2: 380 },
@@ -1147,7 +1158,7 @@
     el.board.addEventListener("pointerdown", beginDrawing);
     el.board.addEventListener("pointermove", updatePointer);
     el.board.addEventListener("pointerup", finishPointer);
-    el.board.addEventListener("pointercancel", finishPointer);
+    el.board.addEventListener("pointercancel", () => { pointerAction = null; saveState(); render(); });
     document.getElementById("addRed").addEventListener("click", () => addMarker("red"));
     document.getElementById("addBlue").addEventListener("click", () => addMarker("blue"));
     el.redScore.addEventListener("change", (event) => setScore("red", event.target.value));
