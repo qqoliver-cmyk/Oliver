@@ -84,7 +84,7 @@
     h1 {
       margin: 0;
       color: var(--deep);
-      font-size: clamp(1.6rem, 3vw, 2.5rem);
+      font-size: 2rem;
       line-height: 1.08;
       font-weight: 900;
     }
@@ -287,6 +287,7 @@
 
     .marker.red circle { fill: var(--red); }
     .marker.blue circle { fill: var(--blue); }
+    .marker circle.touch-target { fill: transparent; stroke: none; filter: none; pointer-events: all; }
     .marker.ball circle { fill: #f3c34e; stroke: #7d5e16; }
 
     .marker text {
@@ -407,7 +408,7 @@
     }
 
     .score-add {
-      min-height: 39px;
+      min-height: 44px;
       border: 1px solid rgba(255, 255, 255, 0.9);
       border-radius: 7px;
       color: var(--ink);
@@ -463,9 +464,9 @@
     }
 
     .text-input {
-      height: 34px;
+      height: 44px;
       padding: 0 10px;
-      font-size: 0.88rem;
+      font-size: 1rem;
       font-weight: 800;
     }
 
@@ -573,7 +574,6 @@
       <div>
         <p class="eyebrow">MATCH COACH BOARD</p>
         <h1>蹴球技术指导板</h1>
-        <p class="subtitle">拖动队员调整站位，画出进攻路线和防守移动，现场直接给队员看。</p>
       </div>
       <div class="live-chip">现场指导</div>
     </header>
@@ -583,7 +583,7 @@
         <div class="board-top">
           <div class="board-title">
             <h2>示意场地</h2>
-            <p>按实际场地站位理解，1m = 100 个示意单位</p>
+            <p>中心圆直径 4.8m · 放置圆半径 0.2m</p>
           </div>
           <div class="orientation">10m × 10m</div>
         </div>
@@ -601,7 +601,7 @@
               </marker>
             </defs>
             <rect x="0" y="0" width="1000" height="1000" rx="12" fill="#d9e8d8"></rect>
-            <rect x="20" y="20" width="960" height="960" rx="8" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.86)" stroke-width="4"></rect>
+            <rect x="20" y="20" width="960" height="960" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.86)" stroke-width="4"></rect>
             <circle cx="500" cy="500" r="230.4" class="field-line"></circle>
             <circle cx="500" cy="500" r="19.2" fill="none" stroke="#9c7417" stroke-width="3"></circle>
             <path d="M20 68 A48 48 0 0 0 68 20" class="service-zone"></path>
@@ -777,6 +777,8 @@
     let activeTool = "select";
     let selectedId = "";
     let pointerAction = null;
+    let scoreEditTeam = "";
+    let scoreEditRecorded = false;
 
     const el = {
       board: document.getElementById("board"),
@@ -882,6 +884,7 @@
           "aria-label": `${marker.type === "red" ? "红方" : "蓝方"}${marker.label}`
         });
         const circle = createSvg("circle", { r: 30 });
+        group.appendChild(createSvg("circle", { r: 75, class: "touch-target" }));
         const text = createSvg("text", { x: 0, y: 1 });
         text.textContent = marker.label;
         group.appendChild(circle);
@@ -906,10 +909,7 @@
       el.coachNote.value = state.note;
       el.redScore.value = state.redScore;
       el.blueScore.value = state.blueScore;
-      document.querySelectorAll("[data-score-team]").forEach((button) => {
-        const score = button.dataset.scoreTeam === "red" ? state.redScore : state.blueScore;
-        button.disabled = score + Number(button.dataset.points) > 100;
-      });
+      renderScoreButtons();
       el.toolName.textContent = toolLabels[activeTool];
       el.objectCount.textContent = `${state.markers.length} 个标记 · ${state.drawings.length} 条路线`;
       el.undo.disabled = state.history.length === 0;
@@ -921,6 +921,15 @@
       });
       renderDrawings();
       renderMarkers();
+    }
+
+    function renderScoreButtons() {
+      document.querySelectorAll("[data-score-team]").forEach((button) => {
+        const score = button.dataset.scoreTeam === "red" ? state.redScore : state.blueScore;
+        button.disabled = score + Number(button.dataset.points) > 100;
+        button.setAttribute("aria-label", `${button.dataset.scoreTeam === "red" ? "红方" : "蓝方"}加${button.dataset.points}分`);
+      });
+      el.undo.disabled = state.history.length === 0;
     }
 
     function showHint(message) {
@@ -1069,6 +1078,7 @@
 
     function addScore(team, points) {
       const key = team === "red" ? "redScore" : "blueScore";
+      setScore(team, el[key].value);
       if (state[key] + points > 100) return;
       pushHistory();
       state[key] += points;
@@ -1087,16 +1097,19 @@
       showHint("双方比分已归零");
     }
 
-    function setScore(team, rawValue) {
+    function setScore(team, rawValue, editing = false) {
       const value = Number(rawValue);
-      if (!Number.isFinite(value)) { render(); return; }
+      if (!Number.isFinite(value)) { if (!editing) render(); return; }
       const key = team === "red" ? "redScore" : "blueScore";
-      const boundedValue = Math.max(0, Math.min(100, Math.trunc(value)));
-      if (state[key] === boundedValue) { render(); return; }
-      pushHistory();
-      state[key] = boundedValue;
-      saveState();
-      render();
+      const boundedValue = boundedScore(value);
+      if (state[key] !== boundedValue) {
+        if (!editing || scoreEditTeam !== team || !scoreEditRecorded) pushHistory();
+        if (editing) scoreEditRecorded = true;
+        state[key] = boundedValue;
+        saveState();
+      }
+      if (editing) renderScoreButtons();
+      else render();
     }
 
     function applyTemplate(name) {
@@ -1161,8 +1174,13 @@
     el.board.addEventListener("pointercancel", () => { pointerAction = null; saveState(); render(); });
     document.getElementById("addRed").addEventListener("click", () => addMarker("red"));
     document.getElementById("addBlue").addEventListener("click", () => addMarker("blue"));
-    el.redScore.addEventListener("change", (event) => setScore("red", event.target.value));
-    el.blueScore.addEventListener("change", (event) => setScore("blue", event.target.value));
+    ["red", "blue"].forEach((team) => {
+      const input = el[`${team}Score`];
+      input.addEventListener("focus", () => { scoreEditTeam = team; scoreEditRecorded = false; });
+      input.addEventListener("input", (event) => setScore(team, event.target.value, true));
+      input.addEventListener("change", (event) => setScore(team, event.target.value));
+      input.addEventListener("blur", (event) => { setScore(team, event.target.value); scoreEditTeam = ""; });
+    });
     document.getElementById("removeSelected").addEventListener("click", removeSelected);
     el.undo.addEventListener("click", undo);
     el.clearBoard.addEventListener("click", clearBoard);
@@ -1177,4 +1195,3 @@
   </script>
 </body>
 </html>
-
